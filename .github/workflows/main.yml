@@ -29,7 +29,7 @@ jobs:
     - name: exports build files (NextJs)
       run: npm run export --if-present
     - name: deploy to gh-pages branch
-      run: sh ./scripts/deploy.sh
+      run: test -d "${OUT}" && sh ./scripts/deploy.sh
       env:
         OUT: ${{ secrets.OUT }}
         CNAME: ${{ secrets.CNAME }}
