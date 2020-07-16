@@ -1,0 +1,35 @@
+on:
+  push:
+    branches:
+    - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: deploy to GitHub Pages
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+    - name: setup node.js
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.x'
+    - name: cache node.js modules
+      uses: actions/cache@v1
+      with:
+        path: ~/.npm
+        key: ${{ runner.OS }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.OS }}-node-
+          ${{ runner.OS }}-
+    - name: install dependencies
+      run: npm ci
+    - name: builds files
+      run: npm run build --if-present
+    - name: exports build files (NextJs)
+      run: npm run export --if-present
+    - name: deploy to gh-pages branch
+      run: sh ./scripts/deploy.sh
+      env:
+        OUT: ${{ secrets.OUT }}
+        CNAME: ${{ secrets.CNAME }}
