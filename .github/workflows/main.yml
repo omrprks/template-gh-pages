@@ -23,7 +23,7 @@ jobs:
           ${{ runner.OS }}-node-
           ${{ runner.OS }}-
     - name: install dependencies
-      run: npm ci
+      run: test -f package.json && npm ci
     - name: builds files
       run: npm run build --if-present
     - name: exports build files (NextJs)
