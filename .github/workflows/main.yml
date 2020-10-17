@@ -1,34 +1,67 @@
+name: main
 on:
   push:
-    branches:
-    - master
+    paths:
+      - '**/*.[tj]sx?'
+      - '**/*.json'
+  workflow_dispatch:
+    inputs:
+      git-ref:
+        description: Git Ref (Optional)
+        required: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     name: deploy to GitHub Pages
     steps:
-    - name: checkout
+    - name: checkout (latest)
       uses: actions/checkout@v2
-    - name: setup node.js
+      if: github.event.inputs.git-ref == ''
+
+    - name: checkout (ref)
+      uses: actions/checkout@v2
+      if: github.event.inputs.git-ref != ''
+      with:
+        ref: ${{github.event.inputs.git-ref}}
+
+    - name: setup node
       uses: actions/setup-node@v1
       with:
         node-version: '12.x'
+
     - name: cache node.js modules
       uses: actions/cache@v1
       with:
-        path: ~/.npm
-        key: ${{ runner.OS }}-node-${{ hashFiles('**/package-lock.json') }}
+        path: node_modules
+        key: nodeModules-${{hashFiles('**/package-lock.json')}}
         restore-keys: |
-          ${{ runner.OS }}-node-
-          ${{ runner.OS }}-
+          nodeModules-
+
     - name: install dependencies
-      run: test -f package.json && npm ci
-    - name: builds files
+      run: test -f package.json && npm install --ignore-scripts
+      env:
+        CI: true
+
+    - name: lint
+      run: npm run lint --if-present
+      env:
+        CI: true
+
+    - name: build
+      if: github.ref == 'refs/heads/main'
       run: npm run build --if-present
+      env:
+        CI: true
+
     - name: exports build files (NextJs)
+      if: github.ref == 'refs/heads/main'
       run: npm run export --if-present
+      env:
+        CI: true
+
     - name: deploy to gh-pages branch
+      if: github.ref == 'refs/heads/main'
       run: test -d "${OUT}" && sh ./scripts/deploy.sh
       env:
         OUT: ${{ secrets.OUT }}
